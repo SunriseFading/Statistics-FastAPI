@@ -1,4 +1,4 @@
-# aiosqlite
+aiosqlite
 python-dotenv
 fastapi
 sqlalchemy

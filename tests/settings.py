@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from datetime import date
+
+
+DATABASE_URL = "sqlite+aiosqlite:///./db.sqlite3"
 
 
 @dataclass
