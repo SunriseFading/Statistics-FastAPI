@@ -1,0 +1,11 @@
+# aiosqlite
+python-dotenv
+fastapi
+sqlalchemy
+sqlalchemy_utils
+uvicorn
+pytest
+pytest_asyncio
+httpx
+asyncpg
+psycopg2-binary
