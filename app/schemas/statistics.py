@@ -1,5 +1,4 @@
 from datetime import date
-from typing import Optional
 
 from app.models.statistics import fields
 from pydantic import BaseModel, validator
@@ -7,9 +6,9 @@ from pydantic import BaseModel, validator
 
 class Statistic(BaseModel):
     date: date
-    views: Optional[int]
-    clicks: Optional[int]
-    cost: Optional[float]
+    views: int = 0
+    clicks: int = 0
+    cost: float = 0
 
     @validator("date")
     def validate_date(cls, v):
@@ -65,7 +64,7 @@ class StatisticOutput(BaseModel):
 class StatisticParams(BaseModel):
     from_date: date
     to_date: date
-    sort_by: Optional[str]
+    order_by: str = "-date"
 
     @validator("from_date", "to_date")
     def validate_date(cls, v):
@@ -86,24 +85,21 @@ class StatisticParams(BaseModel):
             raise ValueError("date cannot be a future date")
         return v
 
-    @validator("sort_by")
-    def validate_sort_by(cls, v):
+    @validator("order_by")
+    def validate_order_by(cls, v):
         """
-        Validates that the Statistic model has a field specified by sort_by.
+        Validates that the Statistic model has a field specified by order_by.
 
         Args:
-            v (str): The sort_by value to validate.
+            v (str): The order_by value to validate.
 
         Raises:
-            ValueError: If the Statistic model has not field specified by sort_by.
+            ValueError: If the Statistic model has not field specified by order_by.
 
         Returns:
-            str: The valid sort_by
+            str: The valid order_by
         """
         if v is not None:
-            if v[0] == "-":
-                v = v[1:]
-            print(v)
-            if v not in fields:
+            if v[1:] not in fields and v not in fields:
                 raise ValueError("statistic model didn't have this field")
         return v

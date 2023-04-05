@@ -1,11 +1,12 @@
 import uuid
 
+from app.crud import CRUD
 from app.database import Base
 from sqlalchemy import Column, Date, Float, Integer
 from sqlalchemy_utils import UUIDType
 
 
-class Statistic(Base):
+class Statistic(Base, CRUD):
     __tablename__ = "statistics"
 
     id = Column(

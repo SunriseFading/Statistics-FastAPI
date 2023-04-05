@@ -1,4 +1,3 @@
-from app.crud.statistics import DBStatistics
 from app.database import get_session
 from app.models.statistics import Statistic as m_Statistic
 from app.schemas.statistics import Statistic as s_Statistic
@@ -14,9 +13,9 @@ router = APIRouter(
 )
 
 
-@router.get("/get_all", status_code=status.HTTP_200_OK, summary="Get all statistics")
-async def get_all(
-    params: StatisticParams = Depends(), db: AsyncSession = Depends(get_session)
+@router.get("/all", status_code=status.HTTP_200_OK, summary="Get all statistics")
+async def all(
+    params: StatisticParams = Depends(), session: AsyncSession = Depends(get_session)
 ):
     """
     Retrieves all Statistic records from the database
@@ -30,11 +29,12 @@ async def get_all(
     Returns:
         list[Statistic]: A list of Statistic instances.
     """
-    statistics = await DBStatistics.get_all(
-        from_date=params.from_date,
-        to_date=params.to_date,
-        sort_by=params.sort_by,
-        db=db,
+    print(params.order_by)
+    statistics = await m_Statistic.filter(
+        date__gte=params.from_date,
+        date__lte=params.to_date,
+        order_by=params.order_by,
+        session=session,
     )
     return (
         [StatisticOutput.from_orm(statistic).dict() for statistic in statistics]
@@ -44,7 +44,7 @@ async def get_all(
 
 
 @router.post("/create", status_code=status.HTTP_201_CREATED, summary="Create statistic")
-async def create(statistic: s_Statistic, db: AsyncSession = Depends(get_session)):
+async def create(statistic: s_Statistic, session: AsyncSession = Depends(get_session)):
     """
     Create or update statistic.
 
@@ -56,26 +56,23 @@ async def create(statistic: s_Statistic, db: AsyncSession = Depends(get_session)
         Dict[str, str]: A message indicating that the statistic was created or updated.
 
     """
-    existing_statistic = await DBStatistics.get_by_date(db, statistic.date)
+    existing_statistic = await m_Statistic.get(date=statistic.date, session=session)
     if existing_statistic:
-        if statistic.views:
-            existing_statistic.views += statistic.views
-        if statistic.clicks:
-            existing_statistic.clicks += statistic.clicks
-        if statistic.cost:
-            existing_statistic.cost += statistic.cost
-        await DBStatistics.update(db, existing_statistic)
+        existing_statistic.views += statistic.views
+        existing_statistic.clicks += statistic.clicks
+        existing_statistic.cost += statistic.cost
+        existing_statistic.cpc = existing_statistic.cost_per_clicks
+        existing_statistic.cpm = existing_statistic.cost_per_views
+        await existing_statistic.update(session=session)
         return {"detail": messages.STATISTIC_UPDATED}
-
-    statistic = m_Statistic(**statistic.dict())
-    await DBStatistics.create(db=db, statistic=statistic)
+    statistic = await m_Statistic(**statistic.dict()).create(session=session)
     return {"detail": messages.STATISTIC_CREATED}
 
 
 @router.delete(
     "/delete_all", status_code=status.HTTP_200_OK, summary="Delete all statistics"
 )
-async def delete_all(db: AsyncSession = Depends(get_session)):
+async def delete_all(session: AsyncSession = Depends(get_session)):
     """
     Delete all statistics.
 
@@ -86,5 +83,6 @@ async def delete_all(db: AsyncSession = Depends(get_session)):
         Dict[str, str]: A message indicating that the statistics were deleted.
 
     """
-    await DBStatistics.delete_all(db=db)
+    statistics = await m_Statistic.all(session=session)
+    await m_Statistic.delete(instances=statistics, session=session)
     return {"detail": messages.STATISTICS_DELETED}
